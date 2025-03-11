@@ -21,7 +21,7 @@ public class Game {
     final double[] CANVAS_SCALE = {800,400};
 
     // Game helper variables
-    final int SAFE_KEY_PRESS_INTERVAL = 200;
+    final int SAFE_KEY_PRESS_INTERVAL = 50;
     Date latestKeyboardInput = new Date();
 
     // Game constant variables
@@ -96,7 +96,7 @@ public class Game {
     final double DIRECTION_ROTATION_SPEED = 1;
     final int DIRECTION_LENGTH = 150;
     final double BALL_SPEED = 5;
-    final double INITIAL_ANGLE = 90;
+    final double INITIAL_ANGLE = 74;
 
     double angle = INITIAL_ANGLE;
     double[] ballVelocity = {Math.sin(degreeToRadian(angle)) * BALL_SPEED, Math.cos(degreeToRadian(angle)) * BALL_SPEED};
@@ -107,6 +107,10 @@ public class Game {
         StdDraw.setXscale(0.0, CANVAS_SCALE[0]);
         StdDraw.setYscale(0.0, CANVAS_SCALE[1]);
         StdDraw.enableDoubleBuffering();
+
+        for (int i = 0; i < BRICK_COORDS.length; i++) {
+            BRICK_STATUS[i] = 1;
+        }
 
         while(true) {
             this.controller();
@@ -133,6 +137,8 @@ public class Game {
         this.paddleCoords[0] = PADDLE_INITIAL_COORDS[0];
         this.paddleCoords[1] = PADDLE_INITIAL_COORDS[1];
         this.angle = INITIAL_ANGLE;
+        this.ballVelocity[0] = Math.sin(degreeToRadian(angle)) * BALL_SPEED;
+        this.ballVelocity[1] = Math.cos(degreeToRadian(angle)) * BALL_SPEED;
         this.score = 0;
 
         for (int i = 0; i < BRICK_COORDS.length; i++) {
@@ -160,12 +166,13 @@ public class Game {
         boolean isLeftRotationValid = angle >= -89;
         boolean isRightRotationValid = angle <= 89;
 
-        if (rotationDirection == DIRECTION.LEFT && isLeftRotationValid) {
-            angle -= DIRECTION_ROTATION_SPEED;
-        } else if (rotationDirection == DIRECTION.RIGHT && isRightRotationValid) {
-            angle += DIRECTION_ROTATION_SPEED;
-        }
+        if (rotationDirection == DIRECTION.LEFT && isLeftRotationValid) angle -= DIRECTION_ROTATION_SPEED;
+        else if (rotationDirection == DIRECTION.RIGHT && isRightRotationValid) angle += DIRECTION_ROTATION_SPEED;
 
+        this.updateBallVelocity();
+    }
+
+    private void updateBallVelocity() {
         ballVelocity[0] = Math.sin(degreeToRadian(angle)) * BALL_SPEED;
         ballVelocity[1] = Math.cos(degreeToRadian(angle)) * BALL_SPEED;
     }
@@ -181,39 +188,68 @@ public class Game {
         if(isBallCollidedWithTopCanvas) ballVelocity[1] = -ballVelocity[1];
         if(isBallCollidedWithBottomCanvas) status = STATUS.GAME_OVER;
         
-        // Paddle & Ball collisions
+        // Paddle Collision Logic
         boolean isPaddleXaligned = ballCoords[0] >= paddleCoords[0] - PADDLE_HALFWIDTH && ballCoords[0] <= paddleCoords[0] + PADDLE_HALFWIDTH;
         boolean isPaddleYaligned = ballCoords[1] >= paddleCoords[1] - PADDLE_HALFHEIGHT && ballCoords[1] <= paddleCoords[1] + PADDLE_HALFHEIGHT;
 
         boolean isPaddleYcollided = Math.abs(paddleCoords[1] - ballCoords[1]) <= PADDLE_HALFHEIGHT + BALL_RADIUS;
         boolean isPaddleXcollided = Math.abs(paddleCoords[0] - ballCoords[0]) <= PADDLE_HALFWIDTH + BALL_RADIUS;
 
-        if(isPaddleXaligned & isPaddleYcollided) ballVelocity[1] = -ballVelocity[1]; 
-        if(isPaddleYaligned & isPaddleXcollided) ballVelocity[0] = -ballVelocity[0];
-        
+        if (isPaddleXcollided && isPaddleYcollided) {
+            if (!isPaddleXaligned && !isPaddleYaligned) { // Paddle köşe çarpışması
+                double paddleCornerX = paddleCoords[0] + (ballCoords[0] > paddleCoords[0] ? PADDLE_HALFWIDTH : -PADDLE_HALFWIDTH);
+                double paddleCornerY = paddleCoords[1] + (ballCoords[1] > paddleCoords[1] ? PADDLE_HALFHEIGHT : -PADDLE_HALFHEIGHT);
 
+                double nx = ballCoords[0] - paddleCornerX;
+                double ny = ballCoords[1] - paddleCornerY;
+                double length = Math.sqrt(nx * nx + ny * ny);
+                nx /= length;
+                ny /= length;
+
+                double dotProduct = ballVelocity[0] * nx + ballVelocity[1] * ny;
+
+                ballVelocity[0] -= 2 * dotProduct * nx;
+                ballVelocity[1] -= 2 * dotProduct * ny;
+            } else if (isPaddleXaligned) { // Paddle üst veya alt kenar çarpışması
+                ballVelocity[1] = -ballVelocity[1];
+            } else if (isPaddleYaligned) { // Paddle sağ veya sol kenar çarpışması
+                ballVelocity[0] = -ballVelocity[0];
+            }
+        }
+
+        // Brick Collision Logic
         for (int i = 0; i < BRICK_COORDS.length; i++) {
             if (BRICK_STATUS[i] == 0) continue;
-            System.out.println("BRICK_COORDS: " + BRICK_COORDS[i][0]);
 
             boolean isXaligned = ballCoords[0] >= BRICK_COORDS[i][0] - BRICK_HALFWIDTH && ballCoords[0] <= BRICK_COORDS[i][0] + BRICK_HALFWIDTH;
             boolean isYaligned = ballCoords[1] >= BRICK_COORDS[i][1] - BRICK_HALFHEIGHT && ballCoords[1] <= BRICK_COORDS[i][1] + BRICK_HALFHEIGHT;
+
             boolean isYcollided = Math.abs(BRICK_COORDS[i][1] - ballCoords[1]) <= BRICK_HALFHEIGHT + BALL_RADIUS;
             boolean isXcollided = Math.abs(BRICK_COORDS[i][0] - ballCoords[0]) <= BRICK_HALFWIDTH + BALL_RADIUS;
-            
 
+            if (isXcollided && isYcollided) {
+                if (!isXaligned && !isYaligned) { 
+                    double cornerX = BRICK_COORDS[i][0] + (ballCoords[0] > BRICK_COORDS[i][0] ? BRICK_HALFWIDTH : -BRICK_HALFWIDTH);
+                    double cornerY = BRICK_COORDS[i][1] + (ballCoords[1] > BRICK_COORDS[i][1] ? BRICK_HALFHEIGHT : -BRICK_HALFHEIGHT);
 
-            if(isXaligned & isYcollided) {
-                ballVelocity[1] = -ballVelocity[1];
-                score = score + POINT_PER_BRICK;
+                    double nx = ballCoords[0] - cornerX;
+                    double ny = ballCoords[1] - cornerY;
+                    double length = Math.sqrt(nx * nx + ny * ny);
+                    nx /= length;
+                    ny /= length;
+
+                    double dotProduct = ballVelocity[0] * nx + ballVelocity[1] * ny;
+
+                    ballVelocity[0] -= 2 * dotProduct * nx;
+                    ballVelocity[1] -= 2 * dotProduct * ny;
+                } 
+                else if (isXaligned) ballVelocity[1] = -ballVelocity[1]; 
+                else if (isYaligned) ballVelocity[0] = -ballVelocity[0];
+                
+
+                score += POINT_PER_BRICK;
                 BRICK_STATUS[i] = 0;
-            };
-            
-            if(isYaligned & isXcollided) {
-                ballVelocity[0] = -ballVelocity[0];
-                score = score + POINT_PER_BRICK;
-                BRICK_STATUS[i] = 0;
-            };
+            }
         }
     }
 
@@ -262,7 +298,7 @@ public class Game {
 
     private void renderBricks() {
         for (int i = 0; i < BRICK_COORDS.length; i++) {
-            System.out.println("BRICK_COORDS[i][0]: " + BRICK_COORDS[i][0]);
+            if (BRICK_STATUS[i] == 0) continue;
             StdDraw.setPenColor(BRICK_COLORS[i]);
             StdDraw.filledRectangle(BRICK_COORDS[i][0], BRICK_COORDS[i][1], BRICK_HALFWIDTH, BRICK_HALFHEIGHT);
         }
