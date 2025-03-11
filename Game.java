@@ -1,41 +1,40 @@
 import stdlib.StdDraw;
 import java.awt.Color;
+import java.awt.Font;
 import java.util.Date;
 
 public class Game {
-    enum STATUS {
-        INIT,
-        PRE_START,
-        PLAYING,
-        GAME_OVER,
-        PAUSED,
-    }
-
-    enum DIRECTION {
-        LEFT,
-        RIGHT
-    }
+    enum STATUS {INIT,PRE_START,PLAYING,GAME_OVER,PAUSED,WINNER_WINNER_CHICKEN_DINNER}
+    enum DIRECTION {LEFT,RIGHT}
     
-    // Canvas size and scale
+    // Canvas settings
+    final String CANVAS_TITLE = "BRICK BREAKER GAME";
     final double[] CANVAS_SIZE = {800,400};
     final double[] CANVAS_SCALE = {800,400};
 
-    // Game helper variables
-    final int SAFE_KEY_PRESS_INTERVAL = 50;
-    Date latestKeyboardInput = new Date();
+    // Styling
+    final Font TYPOGRAPHY_TITLE = new Font("SansSerif", Font.BOLD, 36);
+    final Font TYPOGRAPHY_SUBTITLE = new Font("SansSerif", Font.PLAIN, 24);
+    final Font TYPOGRAPHY_BODY = new Font("SansSerif", Font.PLAIN, 18);
 
     // Game constant variables
     final int POINT_PER_BRICK = 10;
+    final Color TEXT_COLOR = Color.decode("#232323");
+    final Color GAME_COLOR_DANGER = Color.decode("#FF0000");
+    final Color GAME_COLOR_SUCCESS = Color.decode("#00FF00");
+    final int GAME_DELAY = 8;
+
+    // Game helper variables
+    final int SAFE_KEY_PRESS_INTERVAL = 100;
+    Date latestKeyboardInput = new Date();
 
     // Game state variables
     int score = 0;
     STATUS status = STATUS.INIT;
 
-    // Game top text variables
+    // Game text variables
     final double[] TOP_TEXT_LOCATION = {40 ,CANVAS_SIZE[1] - 20};
-    final Color TEXT_COLOR = Color.decode("#232323");
 
-    
     // Game brick variables
     final double BRICK_HALFWIDTH = 50; // Brick half width
     final double BRICK_HALFHEIGHT = 10; // Brick half height
@@ -83,7 +82,7 @@ public class Game {
     // Game paddle variables
     final double PADDLE_HALFWIDTH = 60; // Paddle half width
     final double PADDLE_HALFHEIGHT = 5; // Paddle half height
-    final double PADDLE_SPEED = 20; // Paddle speed
+    final double PADDLE_SPEED = 3; // Paddle speed
     final Color PADDLE_COLOR = new Color(128, 128, 128); // Paddle color
     final double[] PADDLE_INITIAL_COORDS = {400, 5}; // Initial position of the center of the paddle
 
@@ -95,7 +94,7 @@ public class Game {
     final double[] BALL_INITIAL_COORDS = {400,18};
     final double DIRECTION_ROTATION_SPEED = 1;
     final int DIRECTION_LENGTH = 150;
-    final double BALL_SPEED = 5;
+    final double BALL_SPEED = 2;
     final double INITIAL_ANGLE = 74;
 
     double angle = INITIAL_ANGLE;
@@ -104,6 +103,7 @@ public class Game {
 
     public void main() {
         StdDraw.setCanvasSize(800, 400);
+        StdDraw.setTitle(CANVAS_TITLE);
         StdDraw.setXscale(0.0, CANVAS_SCALE[0]);
         StdDraw.setYscale(0.0, CANVAS_SCALE[1]);
         StdDraw.enableDoubleBuffering();
@@ -119,6 +119,7 @@ public class Game {
             else if (status == STATUS.PLAYING) this.playing();
             else if (status == STATUS.GAME_OVER) this.gameOver();
             else if (status == STATUS.PAUSED) this.paused();
+            else if (status == STATUS.WINNER_WINNER_CHICKEN_DINNER) this.winnerWinnerChickenDinner();
         }
         
     }
@@ -127,6 +128,7 @@ public class Game {
     private void runGameEngine() {
         this.moveBall();
         this.checkCollision();
+        this.checkAllBricksDestroyed();
     }
 
     private void resetGameParams() {
@@ -146,15 +148,22 @@ public class Game {
         }
     }
 
+    private void checkAllBricksDestroyed() {
+        for (int i = 0; i < BRICK_COORDS.length; i++) {
+            if (BRICK_STATUS[i] == 1) return;
+        }
+        this.status = STATUS.WINNER_WINNER_CHICKEN_DINNER;
+    }
+
     private void moveBall() {
         this.ballCoords[0] += this.ballVelocity[0];
         this.ballCoords[1] += this.ballVelocity[1];
     }
 
     private void movePaddle(DIRECTION direction) {
-        boolean isLeftPaddleMoveValid = paddleCoords[0] - PADDLE_SPEED > 0;
-        boolean isRightPaddleMoveValid = paddleCoords[0] + PADDLE_SPEED < CANVAS_SIZE[0];
-
+        boolean isLeftPaddleMoveValid = paddleCoords[0] - PADDLE_HALFWIDTH > 0;
+        boolean isRightPaddleMoveValid = paddleCoords[0] + PADDLE_HALFWIDTH < CANVAS_SIZE[0];
+        System.out.println(paddleCoords[0] + " " + PADDLE_HALFWIDTH + " " + CANVAS_SIZE[0]);
         if (direction == DIRECTION.LEFT && isLeftPaddleMoveValid) {
             paddleCoords[0] -= PADDLE_SPEED;
         } else if (direction == DIRECTION.RIGHT && isRightPaddleMoveValid) {
@@ -196,7 +205,7 @@ public class Game {
         boolean isPaddleXcollided = Math.abs(paddleCoords[0] - ballCoords[0]) <= PADDLE_HALFWIDTH + BALL_RADIUS;
 
         if (isPaddleXcollided && isPaddleYcollided) {
-            if (!isPaddleXaligned && !isPaddleYaligned) { // Paddle köşe çarpışması
+            if (!isPaddleXaligned && !isPaddleYaligned) {
                 double paddleCornerX = paddleCoords[0] + (ballCoords[0] > paddleCoords[0] ? PADDLE_HALFWIDTH : -PADDLE_HALFWIDTH);
                 double paddleCornerY = paddleCoords[1] + (ballCoords[1] > paddleCoords[1] ? PADDLE_HALFHEIGHT : -PADDLE_HALFHEIGHT);
 
@@ -210,11 +219,9 @@ public class Game {
 
                 ballVelocity[0] -= 2 * dotProduct * nx;
                 ballVelocity[1] -= 2 * dotProduct * ny;
-            } else if (isPaddleXaligned) { // Paddle üst veya alt kenar çarpışması
-                ballVelocity[1] = -ballVelocity[1];
-            } else if (isPaddleYaligned) { // Paddle sağ veya sol kenar çarpışması
-                ballVelocity[0] = -ballVelocity[0];
-            }
+            } 
+            else if (isPaddleXaligned) ballVelocity[1] = -ballVelocity[1];
+            else if (isPaddleYaligned) ballVelocity[0] = -ballVelocity[0];
         }
 
         // Brick Collision Logic
@@ -268,13 +275,13 @@ public class Game {
             else if (status == STATUS.GAME_OVER) this.resetGameParams();
         }
 
-        if (isLeftArrowPressed & isSafelyPressed) {
+        if (isLeftArrowPressed) {
             this.latestKeyboardInput = new Date();
             if (status == STATUS.PRE_START) this.rotateDirection(DIRECTION.LEFT);
             else if (status == STATUS.PLAYING) this.movePaddle(DIRECTION.LEFT);
         }
 
-        else if (isRightArrowPressed & isSafelyPressed) {
+        else if (isRightArrowPressed) {
             this.latestKeyboardInput = new Date();
             if (status == STATUS.PRE_START) this.rotateDirection(DIRECTION.RIGHT);
             else if (status == STATUS.PLAYING) this.movePaddle(DIRECTION.RIGHT);
@@ -283,10 +290,11 @@ public class Game {
 
     // Canvas rendering methods
     private void render() {
-        StdDraw.show(16);
+        StdDraw.show(GAME_DELAY);
     }
 
     private void renderTopText(String text, double value) {
+        StdDraw.setFont(TYPOGRAPHY_BODY);
         StdDraw.setPenColor(TEXT_COLOR);
         StdDraw.textLeft(TOP_TEXT_LOCATION[0], TOP_TEXT_LOCATION[1], text + " " + value);
     }
@@ -334,7 +342,7 @@ public class Game {
     private void renderPreStart() {
         StdDraw.clear();
         this.renderBall();
-        this.renderTopText("Angle:", angle);
+        this.renderTopText("Angle:", 90 - Math.abs(angle));
         this.renderPaddle();
         this.renderBricks();
         this.renderAngleLine();
@@ -371,14 +379,19 @@ public class Game {
     // ===========================
     private void gameOver() {
         StdDraw.clear();
+        this.renderBall();
+        this.renderBricks();
+        this.renderPaddle();
         this.renderGameOverText();
         this.render();
     }
 
     private void renderGameOverText() {
         StdDraw.setPenColor(TEXT_COLOR);
-        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2, "Game Over");
-        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2 - 20, "Your score is " + score);
+        StdDraw.setFont(TYPOGRAPHY_TITLE);
+        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2, "GAME OVER");
+        StdDraw.setFont(TYPOGRAPHY_SUBTITLE);
+        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2 - 40, "Your score is " + score);
     }
 
     // ===========================
@@ -394,7 +407,23 @@ public class Game {
         StdDraw.setPenColor(TEXT_COLOR);
         StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2, "Paused, press space to continue");
     }
-    
+
+    // ===========================
+    // =========Winner============
+    // ===========================
+    private void winnerWinnerChickenDinner() {
+        StdDraw.clear();
+        this.drawWinner();
+        this.render();
+    }
+
+    private void drawWinner() {
+        StdDraw.setPenColor(GAME_COLOR_DANGER);
+        StdDraw.setFont(TYPOGRAPHY_TITLE);
+        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2, "VICTORY!");
+        StdDraw.setFont(TYPOGRAPHY_SUBTITLE);
+        StdDraw.text(CANVAS_SIZE[0]/2, CANVAS_SIZE[1]/2 - 40, "Your score is " + score);
+    }
     
 
     // ===========================
