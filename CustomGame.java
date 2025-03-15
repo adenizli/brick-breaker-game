@@ -10,8 +10,9 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.KeyEvent;
 import java.util.Date;
+import java.util.Random;
 
-public class Game {
+public class CustomGame {
     enum DIRECTION {LEFT,RIGHT}
     enum KEY_MAP {SPACE, LEFT_ARROW, RIGHT_ARROW}
     enum TYPOGRAPHY {TITLE, SUBTITLE, BODY}
@@ -36,46 +37,37 @@ public class Game {
         final double BRICK_HALFWIDTH = 50;
         final double BRICK_HALFHEIGHT = 10;
 
-        final Color[] BRICK_COLOR_DEFINITIONS = { 
-            new Color(255, 0, 0), 
-            new Color(220, 20, 60),
-            new Color(178, 34, 34), 
-            new Color(139, 0, 0),
-            new Color(255, 69, 0), 
-            new Color(165, 42, 42),
+        final Color[] BRICK_COLOR_DEFINITIONS = {
+            new Color(46, 204, 113),
+            new Color(52, 152, 219),
+            new Color(255, 215, 0),
+            new Color(72, 61, 139),
+            new Color(199, 21, 133),
+            new Color(255, 105, 180)
         };
-
+        
+        
         final double[][] brick_coordinates = {
-            {250, 320},{350, 320},{450, 320},{550, 320},
-            {150,300},{250, 300},{350, 300},{450, 300},
-            {550, 300},{650, 300},{50, 280},{150, 280},
-            {250, 280},{350, 280},{450, 280},{550, 280},
-            {650, 280},{750, 280}, {50, 260},{150, 260},
-            {250, 260},{350, 260},{450, 260},{550, 260},
-            {650, 260},{750, 260}, {50, 240},{150, 240},
-            {250, 240},{350, 240},{450, 240},{550, 240},
-            {650, 240},{750, 240}, {150, 220},{250, 220},
-            {350, 220},{450, 220},{550, 220},{650, 220},
-            {250, 200},{350, 200},{450, 200},{550, 200}
+            {150, 350}, {250, 350}, {550, 350}, 
+            {150, 330}, {250, 330}, {550, 330}, {650, 330}, {750, 330}, 
+            {50,310}, {150, 310}, {250, 310}, {350, 310}, {450, 310}, {550, 310}, {650, 310}, 
+            {50,290}, {150, 290}, {250, 290}, {350, 290}, {450, 290}, {550, 290}, {650, 290}, 
+            {50,270}, {150, 270}, {250, 270}, {350, 270}, {450, 270}, {550, 270},
+            {50,250}, {350, 250}, {450, 250}, {550, 250},
+            {150, 230}, {250, 230}, {350, 230}, {650, 230}, {750, 230},
+            {50,210}, {150, 210}, {250, 210},  {450, 210}, {550, 210}, {650, 210}, {750, 210},
+            {50,190}, {150, 190}, {250, 190}, {350, 190}, {450, 190}, {550, 190}, {650, 190}, {750, 190},
+            {50,170}, {150, 170}, {250, 170}, {350, 170}, {450, 170}, {550, 170}, {650, 170},
+            {150, 150}, {250, 150}, {450, 150}, {550, 150},
+            
         };
+        
+        final Color[] brick_colors = new Color[brick_coordinates.length];
+        
+        
 
         // Brick status contains 0,1 values to indicate if the brick is destroyed or not
         final double[] BRICK_STATUS = new double[brick_coordinates.length];
-
-        // Brick colors are defined in the BRICK_COLOR_DEFINITIONS array
-        final Color [] brick_colors = new Color[] {
-            BRICK_COLOR_DEFINITIONS[0], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[3],
-            BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[4], BRICK_COLOR_DEFINITIONS[3], BRICK_COLOR_DEFINITIONS[0], 
-            BRICK_COLOR_DEFINITIONS[4], BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[0], 
-            BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[3], 
-            BRICK_COLOR_DEFINITIONS[0], BRICK_COLOR_DEFINITIONS[4], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[3], 
-            BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[4], BRICK_COLOR_DEFINITIONS[0], BRICK_COLOR_DEFINITIONS[5], 
-            BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[4], BRICK_COLOR_DEFINITIONS[0], 
-            BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[3], 
-            BRICK_COLOR_DEFINITIONS[0], BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[4], 
-            BRICK_COLOR_DEFINITIONS[0], BRICK_COLOR_DEFINITIONS[5], BRICK_COLOR_DEFINITIONS[1], BRICK_COLOR_DEFINITIONS[2],
-            BRICK_COLOR_DEFINITIONS[3], BRICK_COLOR_DEFINITIONS[2], BRICK_COLOR_DEFINITIONS[3], BRICK_COLOR_DEFINITIONS[0]
-        };
         
 
         // ===================================
@@ -127,13 +119,13 @@ public class Game {
         // ========  INFRASTRUCTURE ==========
         // ===================================
         canvasSetup(CANVAS_TITLE, CANVAS_SIZE);
-        resetGameParams(GAME_STATES, ballCoords, ballVelocity, paddleCoords, brick_coordinates, BRICK_STATUS, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE);
+        resetGameParams(GAME_STATES, ballCoords, ballVelocity, paddleCoords, brick_coordinates, brick_colors, BRICK_COLOR_DEFINITIONS, BRICK_STATUS, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE);
 
         // ===================================
         // ==========  LIFE CYCLE  ===========
         // ===================================
         while(true) {
-            controller(GAME_STATES, ballCoords, ballVelocity, paddleCoords, brick_coordinates, BRICK_STATUS, PADDLE_HALFWIDTH, PADDLE_HALFHEIGHT, CANVAS_SIZE, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE, DIRECTION_ROTATION_SPEED, PADDLE_SPEED);
+            controller(GAME_STATES, ballCoords, ballVelocity, paddleCoords, brick_coordinates, brick_colors, BRICK_COLOR_DEFINITIONS, BRICK_STATUS, PADDLE_HALFWIDTH, PADDLE_HALFHEIGHT, CANVAS_SIZE, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE, DIRECTION_ROTATION_SPEED, PADDLE_SPEED);
             // Initialization
             if (GAME_STATES[1] == 0) init(CANVAS_SIZE);
             // Pre-Start
@@ -179,6 +171,8 @@ public class Game {
      * @param ballVelocity: Velocity of the ball
      * @param paddleCoords: Coordinates of the paddle
      * @param BRICK_COORDS: Coordinates of the bricks
+     * @param BRICK_COLORS: Colors of the bricks
+     * @param BRICK_COLOR_DEFINITIONS: Color definitions for the bricks
      * @param BRICK_STATUS: Status of the bricks
      * @param PADDLE_HALFWIDTH: Half width of the paddle
      * @param PADDLE_HALFHEIGHT: Half height of the paddle
@@ -199,6 +193,8 @@ public class Game {
         double[] ballVelocity,
         double[] paddleCoords,
         double[][] BRICK_COORDS,
+        Color[] BRICK_COLORS,
+        Color[] BRICK_COLOR_DEFINITIONS,
         double[] BRICK_STATUS,
         double PADDLE_HALFWIDTH,
         double PADDLE_HALFHEIGHT,
@@ -232,7 +228,7 @@ public class Game {
             // From Winner to Pre-Start
             else if (GAME_STATES[1] == 3 || GAME_STATES[1] == 5) {
                 GAME_STATES[1] = 1;
-                resetGameParams(GAME_STATES, ballCoords, ballVelocity, paddleCoords, BRICK_COORDS, BRICK_STATUS, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE);
+                resetGameParams(GAME_STATES, ballCoords, ballVelocity, paddleCoords, BRICK_COORDS, BRICK_COLORS, BRICK_COLOR_DEFINITIONS, BRICK_STATUS, PADDLE_INITIAL_COORDS, BALL_SPEED, BALL_INITIAL_COORDS, INITIAL_ANGLE);
             } 
             // From Paused to Playing
             else if (GAME_STATES[1] == 4) GAME_STATES[1] = 2;
@@ -306,6 +302,8 @@ public class Game {
      * @param ballVelocity: Velocity of the ball
      * @param paddleCoords: Coordinates of the paddle
      * @param BRICK_COORDS: Coordinates of the bricks
+     * @param BRICK_COLORS: Colors of the bricks
+     * @param BRICK_COLOR_DEFINITIONS: Color definitions for the bricks
      * @param BRICK_STATUS: Status of the bricks
      * @param PADDLE_INITIAL_COORDS: Initial coordinates of the paddle
      * @param BALL_SPEED: Speed of the ball
@@ -321,6 +319,8 @@ public class Game {
         double[] ballVelocity,
         double[] paddleCoords,
         double[][] BRICK_COORDS,
+        Color[] BRICK_COLORS,
+        Color[] BRICK_COLOR_DEFINITIONS,
         double[] BRICK_STATUS,
         double[] PADDLE_INITIAL_COORDS,
         double BALL_SPEED,
@@ -342,6 +342,12 @@ public class Game {
         GAME_STATES[0] = 0;
         // Reset brick status to initial
         for (int i = 0; i < BRICK_COORDS.length; i++) BRICK_STATUS[i] = 1;    
+
+        Random rand = new Random();
+        for (int i = 0; i < BRICK_COORDS.length; i++) {
+            int colorIndex = rand.nextInt(BRICK_COLOR_DEFINITIONS.length);
+            BRICK_COLORS[i] = BRICK_COLOR_DEFINITIONS[colorIndex];
+        }
     }
 
     /*
@@ -705,7 +711,7 @@ public class Game {
         for (int i = 0; i < BRICK_COORDS.length; i++) {
             // If the brick is already destroyed, skip it
             if (BRICK_STATUS[i] == 0) continue;
-
+            // Select a random color for each brick from the available colors
             // Render the brick
             StdDraw.setPenColor(BRICK_COLORS[i]);
             StdDraw.filledRectangle(BRICK_COORDS[i][0], BRICK_COORDS[i][1], BRICK_HALFWIDTH, BRICK_HALFHEIGHT);
